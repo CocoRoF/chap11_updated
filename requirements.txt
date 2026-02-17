@@ -1,0 +1,58 @@
+# 호환성으로 인해 버전 변경 (260203)
+# langchain-google-genai == 4.1.2 -> 3.1.0
+# langchain-anthropic == 1.3.0 -> 1.1.0
+
+# LangChain ecosystem
+langchain==1.0.8
+langchain-core==1.0.7
+langchain-community==0.4.1
+langchain-text-splitters==1.0.0
+langchain-openai==1.0.3
+langchain-google-genai==3.1.0
+langchain-anthropic==1.1.0
+langchain-classic==1.0.0
+
+# Additional tools (260209)
+youngjin-langchain-tools==0.3.3
+
+# LLM API clients
+openai==2.8.1
+anthropic==0.75.0
+google-ai-generativelanguage==0.9.0
+
+# Tokenizer
+tiktoken==0.12.0
+
+# Streamlit (latest installed)
+streamlit==1.51.0
+streamlit-feedback==0.1.4
+
+# Environment
+python-dotenv==1.2.1
+
+# Web / Crawler / Parsing
+requests==2.32.5
+beautifulsoup4==4.14.2
+##### 기존 duckduckgo-search==8.1.1 -> ddgs==9.10.0 로 변경 (260203)
+##### 기존 덕덕고의 경우 업데이트가 멈추었으며, 이로 인해 일부 기능이 제대로 작동하지 않는 문제가 발생함. (예: 특정 쿼리에 대해 한국 검색 결과가 아닌 랜덤한 검색엔진 사용으로 인해 검색 품질 저하)
+ddgs==9.10.0
+html2text==2025.4.15
+lxml==6.0.2
+lxml_html_clean==0.4.3
+readability-lxml==0.8.4.1
+
+# Youtube
+youtube-transcript-api==1.2.3
+pytube==15.0.0
+
+# PDF / Vector DB
+PyMuPDF==1.26.6
+faiss-cpu==1.13.0
+
+# LangSmith
+langsmith==0.4.45
+
+# File & BigQuery
+python-magic==0.4.27
+google-cloud-bigquery==3.38.0
+db-dtypes==1.4.4
