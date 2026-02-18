@@ -189,7 +189,7 @@ for item in response.output:
                 print(result.logs)  # stdout 출력
         if call_info.error:
             print(call_info.error)  # 에러 메시지
-            
+
     elif item.type == "message":
         for content in item.content:
             if content.type == "output_text":
