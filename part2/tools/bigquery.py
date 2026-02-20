@@ -26,7 +26,7 @@ class BigQueryClient:
     def __init__(
         self,
         code_interpreter: CodeInterpreterClient,
-        project_id: str = "youtube-api-client-480202",  ## 이 부분은 자신이 등록한 구글 클라우드 프로젝트 이름으로 변경
+        project_id: str = "gen-lang-client-0261567189",  ## 이 부분은 자신이 등록한 구글 클라우드 프로젝트 이름으로 변경
         # "bigquery-public-data"란?
         # Google이 공개해 둔 "공공 데이터(public dataset)"
         # Google Trends(검색 트렌드) 데이터

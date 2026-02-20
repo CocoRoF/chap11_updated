@@ -152,6 +152,7 @@ def main():
                 container=st.container(),
                 expand_new_thoughts=True,
                 max_thought_containers=4,
+                max_tool_content_length=150
             )
 
             response = handler.invoke(

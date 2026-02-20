@@ -169,19 +169,19 @@ class CodeInterpreterClient:
         Returns:
             str: 저장된 파일의 경로
         """
-        # 파일명에서 확장자 추출 시도
-        extension = ""
-        if "." in file_id:
-            # file_id가 "cfile_xxx.png" 같은 형식일 수 있음
-            extension = "." + file_id.split(".")[-1]
+        # 1. Container 파일 메타데이터에서 원본 파일명 가져오기
+        file_info = self.openai_client.containers.files.retrieve(
+            container_id=container_id,
+            file_id=file_id,
+        )
+        original_filename = os.path.basename(
+            getattr(file_info, "path", None)
+            or getattr(file_info, "filename", None)
+            or getattr(file_info, "name", None)
+            or file_id
+        )
 
-        # 확장자가 없으면 PNG로 추정 (대부분의 이미지가 PNG)
-        if not extension:
-            extension = ".png"
-
-        file_name = f"./files/{file_id}{extension}"
-
-        # Container files content API를 사용하여 파일 다운로드
+        # 2. 파일 콘텐츠 다운로드
         api_key = self.openai_client.api_key
         base_url = self.openai_client.base_url
         url = f"{base_url}/containers/{container_id}/files/{file_id}/content"
@@ -190,6 +190,8 @@ class CodeInterpreterClient:
         resp = httpx.get(url, headers=headers)
         resp.raise_for_status()
 
+        # 3. 파일 저장
+        file_name = f"./files/{original_filename}"
         with open(file_name, "wb") as f:
             f.write(resp.content)
 
