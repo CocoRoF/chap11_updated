@@ -36,14 +36,26 @@ OpenAI Responses API는 기존의 Chat Completions API를 진화시키고 Assist
 Responses API는 Assistants API와 달리 여러 객체를 미리 생성하고 연결할 필요가 없습니다. **하나의 API 호출(responses.create)에 모든 것을 담아 보내면 됩니다.** 아래 그림은 Responses API의 기본 구조를 나타냅니다.
 
 그림 11.1: Responses API의 요청과 응답 구조
-Responses API의 핵심 개념은 다음과 같습니다.
-개념	설명
-Response	API 호출의 결과를 나타내는 객체. 고유 ID를 가지며, 모델의 출력(output)과 메타데이터를 포함한다.
-Input Items	모델에 전달하는 입력. 텍스트 문자열이나 메시지 배열 형태로 사용자 질문, 이전 대화 등을 전달할 수 있다.
-Output Items	모델의 응답. message, code_interpreter_call, file_search_call 등 다양한 타입의 Item으로 구성된다.
-Tools	모델이 사용할 수 있는 도구. code_interpreter, file_search, function 등을 배열로 지정한다.
-Instructions	시스템 프롬프트(System Prompt). 모델의 역할이나 동작을 지시하는 명령을 설정한다.
-Container	Code Interpreter가 실행되는 샌드박스 환경. 파일 업로드 및 관리도 Container를 통해 이루어진다.
+Responses API의 핵심 구성 요소는 다음과 같습니다.
+
+**1. Response 객체**
+Response는 `responses.create` API 호출의 결과를 나타내는 핵심 객체입니다. 고유 ID를 가지며, 모델의 출력(output)에는 텍스트 메시지뿐 아니라 도구 호출 정보(code_interpreter_call, file_search_call 등)도 포함됩니다. 또한 토큰 사용량 등의 메타데이터도 담고 있습니다. 대화를 이어가려면 이 Response의 ID를 `previous_response_id`로 전달하면 되므로, Response 하나가 곧 대화 상태(state)를 관리하는 단위가 됩니다.
+
+**2. Built-in Tools (내장 도구)**
+Responses API의 가장 큰 특징은 강력한 내장 도구를 `tools` 매개변수에 배열로 지정하는 것만으로 바로 사용할 수 있다는 점입니다. 대표적인 내장 도구는 다음과 같습니다.
+● **Code Interpreter**: 샌드박스 환경에서 Python 코드를 실행한다. 데이터 분석과 시각화에 활용된다.
+● **File Search**: 사용자가 업로드한 문서를 벡터 검색해서 관련 콘텐츠를 추출한다.
+● **Web Search**: 웹 검색을 수행해서 최신 정보를 가져온다.
+● **Function Calling**: 개발자가 정의한 외부 함수를 모델이 호출할 수 있게 한다.
+이 도구들은 하나의 API 호출에서 자유롭게 조합할 수 있으며, 모델이 상황에 따라 적절한 도구를 자율적으로 선택합니다.
+
+**3. Container**
+Container는 Code Interpreter가 코드를 실행하는 완전 격리된 샌드박스 환경입니다. 파일 업로드 및 관리도 Container를 통해 이루어집니다. 자동 생성(`"type": "auto"`)과 명시적 생성(`client.containers.create`) 두 가지 방식을 지원하며, 마지막 사용 후 20분 동안 활성 상태를 유지합니다. 이 장에서 구현할 에이전트의 핵심 구성 요소입니다.
+
+**4. Instructions**
+시스템 프롬프트(System Prompt)에 해당합니다. 모델의 역할이나 동작을 지시하는 명령을 설정합니다. Chat Completions API의 system 메시지와 동일한 역할을 합니다.
+
+이처럼 Responses API는 **하나의 API 호출에 Response, Tools, Container, Instructions를 모두 담아 보내는 간결한 구조**가 특징입니다. Assistants API처럼 여러 객체를 미리 생성하고 연결할 필요가 없습니다.
 
 Responses API를 사용하는 기본적인 흐름은 다음과 같습니다.
 1. responses.create를 호출한다. 사용할 모델, instructions, tools, input을 지정합니다.
