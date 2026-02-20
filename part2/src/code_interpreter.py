@@ -105,6 +105,9 @@ class CodeInterpreterClient:
 - 파일 경로 등이 조금 틀려 있는 경우 적절히 수정해주세요
 """
         try:
+            # 실행 전 Container 파일 목록 스냅샷
+            before_file_ids = self._list_container_file_ids()
+
             # LangChain ChatOpenAI의 built-in Code Interpreter로 코드 실행
             response = self.llm.invoke(prompt)
 
@@ -118,8 +121,8 @@ class CodeInterpreterClient:
             if code_output:
                 text_content = f"[실행 결과]\n{code_output}\n\n{text_content}"
 
-            # 파일 다운로드
-            file_names = self._extract_and_download_files(response)
+            # 실행 후 새로 생성된 파일 다운로드 (annotation 의존 X)
+            file_names = self._download_new_files(before_file_ids)
 
             return text_content, file_names
 
@@ -142,20 +145,28 @@ class CodeInterpreterClient:
                             output += item.get("output", "")
         return output.strip()
 
-    def _extract_and_download_files(self, response):
-        """content_blocks의 annotations에서 파일 참조를 추출하고 다운로드합니다."""
+    def _list_container_file_ids(self):
+        """현재 Container에 존재하는 파일 ID 목록을 반환합니다."""
+        file_ids = set()
+        try:
+            result = self.openai_client.containers.files.list(
+                container_id=self.container_id
+            )
+            for f in result.data:
+                file_ids.add(f.id)
+        except Exception:
+            pass
+        return file_ids
+
+    def _download_new_files(self, before_file_ids):
+        """실행 전후 Container 파일 목록을 비교하여 새로 생긴 파일을 다운로드합니다."""
+        after_file_ids = self._list_container_file_ids()
+        new_file_ids = after_file_ids - before_file_ids
+
         file_paths = []
-        content = response.content if isinstance(response.content, list) else []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                for ann in block.get("annotations", []):
-                    if ann.get("type") == "container_file_citation":
-                        extras = ann.get("extras", {})
-                        file_id = extras.get("file_id") or ann.get("file_id")
-                        container_id = extras.get("container_id") or ann.get("container_id")
-                        if file_id and container_id:
-                            path = self._download_file(container_id, file_id)
-                            file_paths.append(path)
+        for file_id in new_file_ids:
+            path = self._download_file(self.container_id, file_id)
+            file_paths.append(path)
         return file_paths
 
     def _download_file(self, container_id, file_id):
