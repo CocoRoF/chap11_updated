@@ -170,6 +170,5 @@ def main():
                     {"role": "assistant", "content": response}
                 )
 
-
 if __name__ == "__main__":
     main()

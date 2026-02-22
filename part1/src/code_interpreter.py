@@ -103,7 +103,7 @@ class CodeInterpreterClient:
                                 text_parts.append(logs)
 
             output = "\n".join(text_parts).strip()
-            file_names = self._download_new_files(before_file_ids)
+            file_names = self._download_files(before_file_ids)
 
             return output, file_names
 
@@ -120,31 +120,26 @@ class CodeInterpreterClient:
 
         return file_ids
 
-    def _download_new_files(self, before_file_ids):
+    def _download_files(self, before_file_ids):
         """실행 전후 Container 파일 목록을 비교하여 새로 생긴 파일을 다운로드합니다."""
         after_file_ids = self._list_container_file_ids()
         new_file_ids = after_file_ids - before_file_ids
 
         file_paths = []
         for file_id in new_file_ids:
-            path = self._download_file(self.container_id, file_id)
-            file_paths.append(path)
+            file_info = self.openai_client.containers.files.retrieve(
+                file_id=file_id,
+                container_id=self.container_id,
+            )
+            original_filename = os.path.basename(getattr(file_info, "path", None))
+
+            content = self.openai_client.containers.files.content.retrieve(
+                file_id=file_id,
+                container_id=self.container_id,
+            )
+            file_name = f"./files/{original_filename}"
+            with open(file_name, "wb") as f:
+                f.write(content.read())
+
+            file_paths.append(file_name)
         return file_paths
-
-    def _download_file(self, container_id, file_id):
-        file_info = self.openai_client.containers.files.retrieve(
-            container_id=container_id,
-            file_id=file_id,
-        )
-        original_filename = os.path.basename(getattr(file_info, "path", None))
-
-        content = self.openai_client.containers.files.content.retrieve(
-            file_id=file_id,
-            container_id=container_id,
-        )
-
-        file_name = f"./files/{original_filename}"
-        with open(file_name, "wb") as f:
-            f.write(content.read())
-
-        return file_name
