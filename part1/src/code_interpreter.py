@@ -1,6 +1,5 @@
 import os
 import traceback
-import httpx
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
@@ -41,8 +40,7 @@ class CodeInterpreterClient:
 
         # LangChain ChatOpenAI with built-in Code Interpreter (Responses API)
         self.llm = ChatOpenAI(
-            model="gpt-4o",
-            include=["code_interpreter_call.outputs"],
+            model="gpt-5-mini",
         ).bind_tools([
             {
                 "type": "code_interpreter",
@@ -65,20 +63,12 @@ class CodeInterpreterClient:
         return container.id
 
     def upload_file(self, file_content, filename="uploaded_file.csv"):
-        """
-        Upload file to Container for Code Interpreter
-        Args:
-            file_content: File content (bytes)
-            filename: Original filename to preserve in container
-        Returns:
-            filename: The filename accessible in container
-        """
         # Container에 파일 직접 업로드 (Responses API 방식)
         self.openai_client.containers.files.create(
             container_id=self.container_id,
             file=(filename, file_content),
         )
-        return filename  # Container 내에서 접근 가능한 파일명 반환
+        return filename
 
     def run(self, code):
         """
@@ -100,10 +90,10 @@ class CodeInterpreterClient:
 **중요 규칙**:
 - 코드 실행 결과(stdout, stderr)를 정확히 반환해주세요
 - 오류 발생 시 전체 traceback을 포함해주세요
-- 파일 경로 등이 조금 틀려 있을 경우에는 적절히 수정해주세요
+- 파일 경로 등이 조금 틀려 있는 경우 적절히 수정해주세요
 """
         try:
-            # 실행 전 Container 파일 목록 스냅샷
+            # 실행 전 Container 파일 목록
             before_file_ids = self._list_container_file_ids()
 
             # LangChain ChatOpenAI의 built-in Code Interpreter로 코드 실행
@@ -119,7 +109,7 @@ class CodeInterpreterClient:
             if code_output:
                 text_content = f"[실행 결과]\n{code_output}\n\n{text_content}"
 
-            # 실행 후 새로 생성된 파일 다운로드 (annotation 의존 X)
+            # 실행 후 새로 생성된 파일 다운로드
             file_names = self._download_new_files(before_file_ids)
 
             return text_content, file_names
@@ -146,14 +136,10 @@ class CodeInterpreterClient:
     def _list_container_file_ids(self):
         """현재 Container에 존재하는 파일 ID 목록을 반환합니다."""
         file_ids = set()
-        try:
-            result = self.openai_client.containers.files.list(
-                container_id=self.container_id
-            )
-            for f in result.data:
-                file_ids.add(f.id)
-        except Exception:
-            pass
+        result = self.openai_client.containers.files.list(container_id=self.container_id)
+        for f in result.data:
+            file_ids.add(f.id)
+
         return file_ids
 
     def _download_new_files(self, before_file_ids):
@@ -168,40 +154,22 @@ class CodeInterpreterClient:
         return file_paths
 
     def _download_file(self, container_id, file_id):
-        """
-        Container 파일을 다운로드하여 로컬에 저장합니다.
-
-        Args:
-            container_id: OpenAI Container ID
-            file_id: Container 내의 파일 ID
-
-        Returns:
-            str: 저장된 파일의 경로
-        """
         # 1. Container 파일 메타데이터에서 원본 파일명 가져오기
         file_info = self.openai_client.containers.files.retrieve(
             container_id=container_id,
             file_id=file_id,
         )
-        original_filename = os.path.basename(
-            getattr(file_info, "path", None)
-            or getattr(file_info, "filename", None)
-            or getattr(file_info, "name", None)
-            or file_id
+        original_filename = os.path.basename(getattr(file_info, "path", None))
+
+        # 2. 파일 콘텐츠 다운로드 (공식 SDK 사용)
+        content = self.openai_client.containers.files.content.retrieve(
+            file_id=file_id,
+            container_id=container_id,
         )
-
-        # 2. 파일 콘텐츠 다운로드
-        api_key = self.openai_client.api_key
-        base_url = self.openai_client.base_url
-        url = f"{base_url}/containers/{container_id}/files/{file_id}/content"
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        resp = httpx.get(url, headers=headers)
-        resp.raise_for_status()
 
         # 3. 파일 저장
         file_name = f"./files/{original_filename}"
         with open(file_name, "wb") as f:
-            f.write(resp.content)
+            f.write(content.read())
 
         return file_name

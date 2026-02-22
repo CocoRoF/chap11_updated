@@ -50,6 +50,5 @@ faiss-cpu==1.13.0
 langsmith==0.4.45
 
 # File & BigQuery
-python-magic==0.4.27
 google-cloud-bigquery==3.38.0
 db-dtypes==1.4.4
