@@ -7,18 +7,15 @@ import json
 # st.session_state 대신 이 변수를 통해 client에 접근
 _code_interpreter_client = None
 
-
 def set_code_interpreter_client(client):
     """main.py에서 세션 초기화 시 호출하여 client를 설정"""
     global _code_interpreter_client
     _code_interpreter_client = client
 
-
 class ExecPythonInput(BaseModel):
     """타입을 지정하기 위한 클래스"""
 
     code: str = Field()
-
 
 @tool(args_schema=ExecPythonInput)
 def code_interpreter_tool(code):
