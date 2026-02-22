@@ -39,6 +39,8 @@ class CodeInterpreterClient:
         # LangChain ChatOpenAI with built-in Code Interpreter (Responses API)
         self.llm = ChatOpenAI(
             model="gpt-5-mini",
+            include=["code_interpreter_call.outputs"],
+            temperature=0,
         ).bind_tools([
             {
                 "type": "code_interpreter",
@@ -86,20 +88,19 @@ class CodeInterpreterClient:
 ```python
 {code}
 ```
-**중요 규칙**:
-- 코드 실행 결과를 정확히 반환해주세요
-- 오류 발생 시 전체 traceback을 포함해주세요
-- 파일 경로 등이 조금 틀려 있는 경우 적절히 수정해주세요
 """
         try:
             before_file_ids = self._list_container_file_ids()
             response = self.llm.invoke(prompt)
-
             text_parts = []
             content = response.content if isinstance(response.content, list) else []
             for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    text_parts.append(block.get("text", ""))
+                if isinstance(block, dict) and block.get("type") == "code_interpreter_call":
+                    for item in block.get("outputs", []):
+                        if isinstance(item, dict):
+                            logs = item.get("logs", "")
+                            if logs:
+                                text_parts.append(logs)
 
             output = "\n".join(text_parts).strip()
             file_names = self._download_new_files(before_file_ids)
