@@ -48,7 +48,6 @@ class CodeInterpreterClient:
             }
         ])
 
-
     def _create_file_directory(self):
         directory = "./files/"
         os.makedirs(directory, exist_ok=True)
@@ -65,11 +64,11 @@ class CodeInterpreterClient:
 
     def upload_file(self, file_content, filename="uploaded_file.csv"):
         # Container에 파일 직접 업로드 (Responses API 방식)
-        self.openai_client.containers.files.create(
+        response = self.openai_client.containers.files.create(
             container_id=self.container_id,
             file=(filename, file_content),
         )
-        return filename
+        return filename, response.path
 
     def run(self, code):
         """
@@ -93,8 +92,7 @@ class CodeInterpreterClient:
             before_file_ids = self._list_container_file_ids()
             response = self.llm.invoke(prompt)
             text_parts = []
-            content = response.content if isinstance(response.content, list) else []
-            for block in content:
+            for block in response.content:
                 if isinstance(block, dict) and block.get("type") == "code_interpreter_call":
                     for item in block.get("outputs", []):
                         if isinstance(item, dict):
@@ -124,6 +122,7 @@ class CodeInterpreterClient:
         """실행 전후 Container 파일 목록을 비교하여 새로 생긴 파일을 다운로드합니다."""
         after_file_ids = self._list_container_file_ids()
         new_file_ids = after_file_ids - before_file_ids
+        print(f"New file IDs: {new_file_ids}")
 
         file_paths = []
         for file_id in new_file_ids:
@@ -140,6 +139,7 @@ class CodeInterpreterClient:
             file_name = f"./files/{original_filename}"
             with open(file_name, "wb") as f:
                 f.write(content.read())
+                print(f"Downloaded file: {file_name}")
 
             file_paths.append(file_name)
         return file_paths
