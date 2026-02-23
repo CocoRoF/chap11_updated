@@ -18,11 +18,6 @@ class ExecSqlInput(BaseModel):
 
 
 class BigQueryClient:
-    """
-    BigQuery 클라이언트 (Responses API 기반)
-
-    Assistants API에서 Responses API로 마이그레이션된 Code Interpreter를 사용합니다.
-    """
     def __init__(
         self,
         code_interpreter: CodeInterpreterClient,
@@ -66,15 +61,12 @@ class BigQueryClient:
     def exec_query_and_upload(self, query: str, limit: int = None) -> str:
         """
         Execute given SQL query and return result as a formatted string or path to a saved file.
-
-        Responses API 기반으로 업데이트됨: 파일 업로드 경로가 Container 기반으로 변경
         """
         try:
             df = self._exec_query(query, limit)
             csv_data = df.to_csv().encode("utf-8")
-            file_id = self.code_interpreter.upload_file(csv_data)
-            # Responses API에서는 Container를 사용하므로 파일 경로가 다를 수 있음
-            return f"sql:\n```\n{query}\n```\n\nsample results:\n{df.head()}\n\nfull result was uploaded with File ID: {file_id} (accessible in Code Interpreter)"
+            file_name, file_path = self.code_interpreter.upload_file(csv_data)
+            return f"sql:\n```\n{query}\n```\n\nsample results:\n{df.head()}\n\nfull result was uploaded with File Name: {file_name} (accessible in Code Interpreter: {file_path})"
         except Exception as e:
             return f"SQL execution failed. Error message is as follows:\n```\n{e}\n```"
 
@@ -147,7 +139,6 @@ class BigQueryClient:
 
         샘플 외의 전체 결과는 Code Interpreter에 CSV 파일로 저장됩니다.
         Code Interpreter에서 Python을 실행하여 접근할 수 있습니다.
-        (Responses API 기반)
         """
         return StructuredTool.from_function(
             name="exec_query",
