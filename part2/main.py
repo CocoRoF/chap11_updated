@@ -1,7 +1,6 @@
 import re
 import streamlit as st
 from langsmith import uuid7
-
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -14,20 +13,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from src.code_interpreter import CodeInterpreterClient
 from tools.code_interpreter import code_interpreter_tool, set_code_interpreter_client
 from tools.bigquery import BigQueryClient
-
-###### dotenv을 사용하지 않는 경우 삭제해주세요 ######
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except ImportError:
-    import warnings
-
-    warnings.warn(
-        "dotenv not found. Please make sure to set your environment variables manually.",
-        ImportWarning,
-    )
-################################################
 
 
 @st.cache_data  # 캐시를 사용하도록 변경
