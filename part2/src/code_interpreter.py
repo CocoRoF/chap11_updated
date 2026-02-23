@@ -93,8 +93,6 @@ class CodeInterpreterClient:
         try:
             before_file_ids = self._list_container_file_ids()
             response = self.llm.invoke(prompt)
-
-            # code_interpreter_call 블록에서 outputs의 logs를 추출
             text_parts = []
             for block in response.content:
                 if isinstance(block, dict) and block.get("type") == "code_interpreter_call":

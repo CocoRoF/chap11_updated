@@ -111,9 +111,31 @@ def parse_response(response):
 
     return text, image_paths
 
+def normalize_image_path(path):
+    # 알려진 샌드박스 프리픽스를 제거
+    sandbox_prefixes = [
+        "sandbox:/mnt/data/",
+        "sandbox:/mnt/user/",
+        "/mnt/data/",
+        "/mnt/user/",
+    ]
+    for prefix in sandbox_prefixes:
+        if path.startswith(prefix):
+            path = path[len(prefix):]
+            break
+
+    # ./files/ 또는 /files/ 또는 files/ 로 시작하면 정상 경로로 정규화
+    if path.startswith("./files/"):
+        return path
+    elif path.startswith("/files/"):
+        return "." + path
+    elif path.startswith("files/"):
+        return "./" + path
+    return None
 
 def display_content(content):
     text, image_paths = parse_response(content)
+    image_paths = [p for p in (normalize_image_path(path) for path in image_paths) if p is not None]
     st.write(text)
     for image_path in image_paths:
         st.image(image_path, caption="")
@@ -154,7 +176,6 @@ def main():
                 st.session_state.messages.append(
                     {"role": "assistant", "content": response}
                 )
-
 
 if __name__ == "__main__":
     main()
